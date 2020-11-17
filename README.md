@@ -51,8 +51,7 @@ public class Jwt {
     
     // 생략
 
-    @PostConstruct
-    public void keySetter() {
+    public Jwt() {
         key = Keys.secretKeyFor(SignatureAlgorithm.HS256);
     }
 
@@ -80,7 +79,7 @@ public class Jwt {
         String token = Jwts.builder()
                 .setHeader(headers)
                 .setClaims(claims)
-                .signWith(key)
+                .signWith(key) // HS256 알고리즘에 적합한 key를 사용하여 서명
                 .compact();
 
         return token;
@@ -92,4 +91,24 @@ public class Jwt {
 ```
 
 ### 검증 예시
+io.jsonwebtoken 패키지의 Jwts 클래스 사용
+1. parser() 호출
+2. setSigningKey() 호출
+    - 기존에 존재했었던 key를 인자로 넣어주어 호출
+3. parseClaimsJws() 호출
+    - 토큰을 인자로 넣어주어 호출
+4. getBody() 호출
+    - 클레임들(페이로드)을 가져옴
+    
+``` java
+try {
+    Claims claims = Jwts.parser().setSigningKey(this.key).parseClaimsJws(token).getBody();
+    Long userId = Long.parseLong(claims.getSubject());
 
+    // 생략
+} catch (ExpiredJwtException e) {
+    throw new UnauthorizeException("토큰이 만료되었습니다.");
+} catch (UnsupportedJwtException | MalformedJwtException | SignatureException | IllegalArgumentException e) {
+    throw new UnauthorizeException("토큰이 유효하지 않습니다.");
+}
+```
